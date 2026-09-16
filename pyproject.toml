@@ -1,0 +1,58 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tt-blackhole-benchmark"
+version = "0.1.0"
+description = "Reproducible performance and energy-efficiency benchmarks for Tenstorrent Blackhole accelerators"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+dependencies = [
+    "pydantic>=2.7,<3",
+    "PyYAML>=6,<7",
+]
+
+[project.optional-dependencies]
+analysis = [
+    "jupyterlab>=4",
+    "matplotlib>=3.8",
+    "pandas>=2.2",
+    "seaborn>=0.13",
+]
+dev = [
+    "mypy>=1.10",
+    "pytest>=8",
+    "pytest-cov>=5",
+    "ruff>=0.6",
+    "types-PyYAML>=6",
+]
+
+[project.scripts]
+tt-benchmark = "tt_blackhole_benchmark.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tt_blackhole_benchmark"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers"
+markers = [
+    "unit: tests without external resources or accelerator hardware",
+    "integration: integration tests without accelerator hardware",
+    "hardware: tests requiring a Tenstorrent accelerator",
+    "slow: long-running tests",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+packages = ["tt_blackhole_benchmark"]
