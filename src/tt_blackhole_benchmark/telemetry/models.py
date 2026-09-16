@@ -92,3 +92,24 @@ class TelemetrySnapshot(BaseModel):
                 raise ValueError("Sample monotonic_ns must match snapshot monotonic_ns")
 
         return self
+
+
+class TelemetryAcquisition(BaseModel):
+    """Result and diagnostics of one telemetry backend invocation."""
+
+    model_config = ConfigDict(
+        frozen=True,
+        extra="forbid",
+    )
+
+    snapshot: TelemetrySnapshot
+    command: tuple[str, ...] = Field(min_length=1)
+    exit_code: int
+    duration_seconds: float = Field(ge=0)
+    stderr: str = ""
+
+    @property
+    def recovered_from_nonzero_exit(self) -> bool:
+        """Whether valid telemetry survived an abnormal process exit."""
+
+        return self.exit_code != 0

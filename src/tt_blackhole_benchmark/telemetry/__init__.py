@@ -1,6 +1,11 @@
 """Telemetry acquisition for Tenstorrent accelerators."""
 
+from tt_blackhole_benchmark.telemetry.backend import (
+    TelemetryBackendError,
+    TtSmiBackend,
+)
 from tt_blackhole_benchmark.telemetry.models import (
+    TelemetryAcquisition,
     TelemetrySample,
     TelemetrySnapshot,
 )
@@ -14,4 +19,7 @@ __all__ = [
     "TelemetrySample",
     "TelemetrySnapshot",
     "parse_tt_smi_output",
+    "TelemetryAcquisition",
+    "TelemetryBackendError",
+    "TtSmiBackend",
 ]
