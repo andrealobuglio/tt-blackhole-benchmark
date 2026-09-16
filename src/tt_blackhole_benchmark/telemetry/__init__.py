@@ -4,8 +4,13 @@ from tt_blackhole_benchmark.telemetry.backend import (
     TelemetryBackendError,
     TtSmiBackend,
 )
+from tt_blackhole_benchmark.telemetry.collector import (
+    TelemetryCollector,
+    TelemetryCollectorError,
+)
 from tt_blackhole_benchmark.telemetry.models import (
     TelemetryAcquisition,
+    TelemetryCollectionFailure,
     TelemetrySample,
     TelemetrySnapshot,
 )
@@ -22,4 +27,7 @@ __all__ = [
     "TelemetryAcquisition",
     "TelemetryBackendError",
     "TtSmiBackend",
+    "TelemetryCollectionFailure",
+    "TelemetryCollector",
+    "TelemetryCollectorError",
 ]

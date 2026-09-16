@@ -113,3 +113,27 @@ class TelemetryAcquisition(BaseModel):
         """Whether valid telemetry survived an abnormal process exit."""
 
         return self.exit_code != 0
+
+
+class TelemetryCollectionFailure(BaseModel):
+    """A recoverable failure during periodic telemetry collection."""
+
+    model_config = ConfigDict(
+        frozen=True,
+        extra="forbid",
+    )
+
+    captured_at: datetime
+    monotonic_ns: int = Field(ge=0)
+    message: str = Field(min_length=1)
+
+    @field_validator("captured_at")
+    @classmethod
+    def validate_and_normalize_timestamp(
+        cls,
+        value: datetime,
+    ) -> datetime:
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("captured_at must be timezone-aware")
+
+        return value.astimezone(UTC)
