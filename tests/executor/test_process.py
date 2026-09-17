@@ -140,3 +140,23 @@ def test_parent_environment_is_not_modified(
     )
 
     assert variable not in os.environ
+
+
+def test_execute_process_can_remove_inherited_environment(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    variable = "TT_METAL_SLOW_DISPATCH_MODE"
+    monkeypatch.setenv(variable, "1")
+
+    execution = execute_process(
+        shell_command(
+            f"if [ -z \"${{{variable}+x}}\" ]; then printf 'unset\\n'; else printf 'set\\n'; fi"
+        ),
+        working_directory=tmp_path,
+        timeout_seconds=5.0,
+        environment={variable: None},
+    )
+
+    assert execution.return_code == 0
+    assert execution.stdout.strip() == "unset"

@@ -45,7 +45,7 @@ def execute_process(
     *,
     working_directory: str | Path,
     timeout_seconds: float,
-    environment: Mapping[str, str] | None = None,
+    environment: Mapping[str, str | None] | None = None,
     termination_grace_seconds: float = 5.0,
 ) -> ProcessExecution:
     """Execute a command and return only directly observed values."""
@@ -67,7 +67,11 @@ def execute_process(
     process_environment = os.environ.copy()
 
     if environment is not None:
-        process_environment.update(environment)
+        for name, value in environment.items():
+            if value is None:
+                process_environment.pop(name, None)
+            else:
+                process_environment[name] = value
 
     started_at = datetime.now(UTC)
     started_monotonic_ns = time.monotonic_ns()
