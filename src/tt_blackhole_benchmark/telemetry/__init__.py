@@ -18,6 +18,9 @@ from tt_blackhole_benchmark.telemetry.parser import (
     TelemetryParseError,
     parse_tt_smi_output,
 )
+from tt_blackhole_benchmark.telemetry.persistent_backend import (
+    PersistentTtSmiBackend,
+)
 
 __all__ = [
     "TelemetryParseError",
@@ -30,4 +33,5 @@ __all__ = [
     "TelemetryCollectionFailure",
     "TelemetryCollector",
     "TelemetryCollectorError",
+    "PersistentTtSmiBackend",
 ]
