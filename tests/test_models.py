@@ -7,6 +7,7 @@ from tt_blackhole_benchmark.models import (
     BenchmarkConfiguration,
     DispatchMode,
     RuntimeConfiguration,
+    TelemetryBackendType,
     TelemetryConfiguration,
     Workload,
 )
@@ -68,7 +69,7 @@ def test_default_telemetry_configuration_matches_methodology() -> None:
     telemetry = TelemetryConfiguration()
 
     assert telemetry.enabled is True
-    assert telemetry.backend == "tt-smi"
+    assert telemetry.backend is TelemetryBackendType.PERSISTENT_TT_SMI
     assert telemetry.interval_ms == 500
     assert telemetry.idle_before_seconds == 2.0
     assert telemetry.idle_after_seconds == 2.0
@@ -117,3 +118,8 @@ def test_models_are_immutable() -> None:
 
     with pytest.raises(ValidationError):
         workload.batch_size = 2
+
+
+def test_telemetry_rejects_unknown_backend() -> None:
+    with pytest.raises(ValidationError):
+        TelemetryConfiguration.model_validate({"backend": "unknown-backend"})
