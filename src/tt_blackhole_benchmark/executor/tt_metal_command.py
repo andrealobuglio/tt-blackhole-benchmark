@@ -31,7 +31,7 @@ def build_tt_metal_invocation(
 
     root = Path(tt_metal_root).resolve()
     prompts = Path(prompt_file).resolve()
-    executable = Path(python_executable).resolve()
+    executable = Path(python_executable)
     cache = Path(cache_path).resolve()
 
     if workload.request_count % workload.batch_size != 0:

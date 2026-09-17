@@ -110,3 +110,24 @@ def test_rejects_fewer_than_two_output_tokens(
             cache_path=tmp_path / "cache",
             trace_enabled=True,
         )
+
+
+def test_preserves_virtualenv_python_symlink(
+    tmp_path: Path,
+) -> None:
+    python_link = tmp_path / "venv" / "bin" / "python"
+    python_link.parent.mkdir(parents=True)
+    python_link.symlink_to("/usr/bin/python3")
+
+    invocation = build_tt_metal_invocation(
+        tt_metal_root=tmp_path,
+        prompt_file=tmp_path / "prompts.json",
+        model="Qwen/Qwen2.5-0.5B-Instruct",
+        workload=make_workload(),
+        max_sequence_length=1024,
+        cache_path=tmp_path / "cache",
+        trace_enabled=True,
+        python_executable=python_link,
+    )
+
+    assert invocation.command[0] == str(python_link)
