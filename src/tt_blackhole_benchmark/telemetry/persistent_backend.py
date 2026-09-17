@@ -1,8 +1,7 @@
 """Persistent process-isolated backend for tt-smi telemetry."""
 
-import time
 from collections.abc import Callable, Mapping
-from datetime import UTC, datetime
+from datetime import datetime
 from multiprocessing import get_context
 from multiprocessing.connection import Connection
 from multiprocessing.process import BaseProcess
@@ -94,18 +93,12 @@ class PersistentTtSmiBackend:
 
         connection = self._require_connection()
 
-        started_at = datetime.now(UTC)
-        started_monotonic_ns = time.monotonic_ns()
-
         try:
             connection.send("acquire")
         except (BrokenPipeError, EOFError, OSError) as error:
             raise TelemetryBackendError("Cannot send request to telemetry worker") from error
 
         response = self._receive_message(timeout_seconds=self._request_timeout_seconds)
-
-        finished_at = datetime.now(UTC)
-        finished_monotonic_ns = time.monotonic_ns()
 
         kind = response["kind"]
 
@@ -124,15 +117,28 @@ class PersistentTtSmiBackend:
         if not isinstance(payload, str):
             raise TelemetryBackendError("Telemetry worker returned an invalid payload")
 
-        duration_ns = finished_monotonic_ns - started_monotonic_ns
-        midpoint_monotonic_ns = started_monotonic_ns + duration_ns // 2
-        midpoint_timestamp = started_at + (finished_at - started_at) / 2
+        captured_at_raw = response.get("captured_at")
+        monotonic_ns = response.get("monotonic_ns")
+
+        if not isinstance(captured_at_raw, str):
+            raise TelemetryBackendError("Telemetry worker returned an invalid timestamp")
+
+        try:
+            captured_at = datetime.fromisoformat(captured_at_raw)
+        except ValueError as error:
+            raise TelemetryBackendError("Telemetry worker returned an invalid timestamp") from error
+
+        if captured_at.tzinfo is None or captured_at.utcoffset() is None:
+            raise TelemetryBackendError("Telemetry worker returned a naive timestamp")
+
+        if isinstance(monotonic_ns, bool) or not isinstance(monotonic_ns, int) or monotonic_ns < 0:
+            raise TelemetryBackendError("Telemetry worker returned an invalid monotonic timestamp")
 
         try:
             snapshot = parse_tt_smi_output(
                 payload,
-                captured_at=midpoint_timestamp,
-                monotonic_ns=midpoint_monotonic_ns,
+                captured_at=captured_at,
+                monotonic_ns=monotonic_ns,
             )
         except TelemetryParseError as error:
             raise TelemetryBackendError("Telemetry worker returned invalid tt-smi JSON") from error
@@ -141,7 +147,6 @@ class PersistentTtSmiBackend:
             snapshot=snapshot,
             command=("persistent-tt-smi-worker",),
             exit_code=0,
-            duration_seconds=duration_ns / 1_000_000_000,
         )
 
     def close(self) -> None:

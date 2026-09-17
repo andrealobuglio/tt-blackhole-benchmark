@@ -1,6 +1,8 @@
 """Isolated persistent worker for direct tt-smi telemetry access."""
 
 import os
+import time
+from datetime import UTC, datetime
 from multiprocessing.connection import Connection
 from typing import NoReturn, Protocol
 
@@ -32,6 +34,8 @@ def serve_worker_requests(
         if command == "acquire":
             try:
                 telemetry_source.update_telem()
+                captured_at = datetime.now(UTC)
+                monotonic_ns = time.monotonic_ns()
                 payload = telemetry_source.get_logs_json()
             except Exception as error:
                 connection.send(
@@ -45,6 +49,8 @@ def serve_worker_requests(
                     {
                         "kind": "sample",
                         "payload": payload,
+                        "captured_at": captured_at.isoformat(),
+                        "monotonic_ns": monotonic_ns,
                     }
                 )
 

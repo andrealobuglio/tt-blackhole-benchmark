@@ -36,10 +36,7 @@ def test_collector_samples_persistent_backend() -> None:
     assert collector.failures == ()
     assert len(acquisitions) >= 5
 
-    timestamps = [
-        acquisition.snapshot.monotonic_ns
-        for acquisition in acquisitions
-    ]
+    timestamps = [acquisition.snapshot.monotonic_ns for acquisition in acquisitions]
 
     assert timestamps == sorted(timestamps)
     assert len(set(timestamps)) == len(timestamps)

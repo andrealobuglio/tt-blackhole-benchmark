@@ -45,9 +45,6 @@ class TtSmiBackend:
     def acquire(self) -> TelemetryAcquisition:
         """Execute tt-smi and return parsed telemetry with diagnostics."""
 
-        started_at = datetime.now(UTC)
-        started_monotonic_ns = time.monotonic_ns()
-
         try:
             process: subprocess.CompletedProcess[str] = subprocess.run(
                 self._command,
@@ -56,6 +53,8 @@ class TtSmiBackend:
                 timeout=self._timeout_seconds,
                 check=False,
             )
+            captured_at = datetime.now(UTC)
+            monotonic_ns = time.monotonic_ns()
         except FileNotFoundError as error:
             raise TelemetryBackendError(
                 f"Telemetry command not found: {self._command[0]}"
@@ -67,20 +66,13 @@ class TtSmiBackend:
         except OSError as error:
             raise TelemetryBackendError(f"Cannot execute telemetry command: {error}") from error
 
-        finished_at = datetime.now(UTC)
-        finished_monotonic_ns = time.monotonic_ns()
-
-        duration_ns = finished_monotonic_ns - started_monotonic_ns
-        midpoint_monotonic_ns = started_monotonic_ns + duration_ns // 2
-        midpoint_timestamp = started_at + (finished_at - started_at) / 2
-
         combined_output = "\n".join(part for part in (process.stdout, process.stderr) if part)
 
         try:
             snapshot = parse_tt_smi_output(
                 combined_output,
-                captured_at=midpoint_timestamp,
-                monotonic_ns=midpoint_monotonic_ns,
+                captured_at=captured_at,
+                monotonic_ns=monotonic_ns,
             )
         except TelemetryParseError as error:
             raise TelemetryBackendError(
@@ -91,6 +83,5 @@ class TtSmiBackend:
             snapshot=snapshot,
             command=self._command,
             exit_code=process.returncode,
-            duration_seconds=duration_ns / 1_000_000_000,
             stderr=process.stderr,
         )

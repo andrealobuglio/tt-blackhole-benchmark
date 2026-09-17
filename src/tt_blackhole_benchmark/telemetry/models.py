@@ -105,7 +105,6 @@ class TelemetryAcquisition(BaseModel):
     snapshot: TelemetrySnapshot
     command: tuple[str, ...] = Field(min_length=1)
     exit_code: int
-    duration_seconds: float = Field(ge=0)
     stderr: str = ""
 
     @property

@@ -13,6 +13,13 @@ class DispatchMode(StrEnum):
     SLOW = "slow"
 
 
+class TelemetryBackendType(StrEnum):
+    """Available telemetry acquisition backends."""
+
+    PERSISTENT_TT_SMI = "tt-smi-persistent"
+    SNAPSHOT_TT_SMI = "tt-smi-snapshot"
+
+
 class Workload(BaseModel):
     """A single benchmark point in the workload space."""
 
@@ -48,7 +55,7 @@ class TelemetryConfiguration(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     enabled: bool = True
-    backend: str = "tt-smi"
+    backend: TelemetryBackendType = TelemetryBackendType.PERSISTENT_TT_SMI
     interval_ms: int = Field(default=500, ge=100)
     idle_before_seconds: float = Field(default=2.0, ge=0)
     idle_after_seconds: float = Field(default=2.0, ge=0)

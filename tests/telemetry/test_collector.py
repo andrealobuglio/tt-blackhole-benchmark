@@ -47,7 +47,6 @@ def make_acquisition() -> TelemetryAcquisition:
         snapshot=snapshot,
         command=("fake-tt-smi", "-s"),
         exit_code=0,
-        duration_seconds=0.001,
     )
 
 

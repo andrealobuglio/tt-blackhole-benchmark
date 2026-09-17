@@ -48,7 +48,6 @@ def test_backend_accepts_clean_process_exit() -> None:
     assert acquisition.exit_code == 0
     assert acquisition.recovered_from_nonzero_exit is False
     assert acquisition.snapshot.samples[0].power_w == 35.0
-    assert acquisition.duration_seconds >= 0
 
 
 def test_backend_recovers_json_from_abnormal_exit() -> None:

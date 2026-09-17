@@ -9,7 +9,7 @@ from tt_blackhole_benchmark.config import (
     ConfigurationError,
     load_configuration,
 )
-from tt_blackhole_benchmark.models import DispatchMode
+from tt_blackhole_benchmark.models import DispatchMode, TelemetryBackendType
 
 
 def test_load_smoke_configuration() -> None:
@@ -21,6 +21,7 @@ def test_load_smoke_configuration() -> None:
     assert configuration.runtime.trace_enabled is True
     assert len(configuration.workloads) == 1
     assert configuration.workloads[0].input_tokens == 128
+    assert configuration.telemetry.backend is TelemetryBackendType.PERSISTENT_TT_SMI
 
 
 def test_missing_configuration_file_is_rejected(

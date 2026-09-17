@@ -64,6 +64,12 @@ def test_worker_serves_multiple_acquisitions() -> None:
         assert json.loads(second["payload"])["sequence"] == 2
         assert source.update_count == 2
 
+        assert isinstance(first["captured_at"], str)
+        assert isinstance(first["monotonic_ns"], int)
+        assert isinstance(second["captured_at"], str)
+        assert isinstance(second["monotonic_ns"], int)
+        assert second["monotonic_ns"] >= first["monotonic_ns"]
+
         parent_connection.send("close")
         closed = parent_connection.recv()
 

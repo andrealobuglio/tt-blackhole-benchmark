@@ -12,7 +12,7 @@ runtime:
 
 telemetry:
   enabled: true
-  backend: tt-smi
+  backend: tt-smi-persistent
   interval_ms: 500
   idle_before_seconds: 2.0
   idle_after_seconds: 2.0
