@@ -173,3 +173,71 @@ def test_stop_before_start_is_safe() -> None:
     collector.stop()
 
     assert collector.is_running is False
+
+
+def test_collector_sends_acquisitions_to_sink() -> None:
+    persisted: list[TelemetryAcquisition] = []
+    backend = CountingBackend(target_count=1)
+
+    collector = TelemetryCollector(
+        backend,
+        interval_seconds=0.01,
+        acquisition_sink=persisted.append,
+    )
+
+    collector.start()
+    reached = backend.target_reached.wait(timeout=1.0)
+    collector.stop(timeout_seconds=1.0)
+
+    assert reached is True
+    assert persisted
+    assert persisted == list(collector.acquisitions)
+
+
+def test_collector_sends_failures_to_sink() -> None:
+    persisted = []
+    backend = FailingOnceBackend()
+
+    collector = TelemetryCollector(
+        backend,
+        interval_seconds=0.01,
+        failure_sink=persisted.append,
+    )
+
+    collector.start()
+    reached = backend.success_reached.wait(timeout=1.0)
+    collector.stop(timeout_seconds=1.0)
+
+    assert reached is True
+    assert len(persisted) == 1
+    assert persisted[0].message == "temporary failure"
+    assert persisted == list(collector.failures)
+
+
+def test_collector_reports_acquisition_sink_failure() -> None:
+    backend = CountingBackend(target_count=1)
+    sink_called = threading.Event()
+
+    def failing_sink(
+        acquisition: TelemetryAcquisition,
+    ) -> None:
+        sink_called.set()
+        raise RuntimeError("database unavailable")
+
+    collector = TelemetryCollector(
+        backend,
+        interval_seconds=0.01,
+        acquisition_sink=failing_sink,
+    )
+    collector.start()
+
+    assert sink_called.wait(timeout=1.0) is True
+
+    with pytest.raises(
+        TelemetryCollectorError,
+        match="worker failed",
+    ) as error:
+        collector.stop(timeout_seconds=1.0)
+
+    assert isinstance(error.value.__cause__, RuntimeError)
+    assert str(error.value.__cause__) == "database unavailable"
