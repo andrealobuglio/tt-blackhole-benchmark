@@ -16,6 +16,7 @@ from tt_blackhole_benchmark.persistence.run_repository import (
     RunRepositoryError,
     RunWorkspace,
     create_run_workspace,
+    record_orchestration_failure,
     record_process_execution,
 )
 from tt_blackhole_benchmark.persistence.telemetry_repository import (
@@ -40,4 +41,5 @@ __all__ = [
     "TelemetryRepositoryError",
     "record_telemetry_acquisition",
     "record_telemetry_failure",
+    "record_orchestration_failure",
 ]

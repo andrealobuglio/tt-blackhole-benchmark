@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS runs (
     run_id TEXT PRIMARY KEY,
     campaign_id TEXT NOT NULL,
     repetition_index INTEGER NOT NULL,
+    run_phase TEXT NOT NULL,
     model TEXT NOT NULL,
     input_tokens_requested INTEGER NOT NULL,
     output_tokens_requested INTEGER NOT NULL,
@@ -38,6 +39,7 @@ CREATE TABLE IF NOT EXISTS runs (
     stderr_path TEXT,
     prompt_path TEXT,
     configuration_path TEXT NOT NULL,
+    orchestration_error_path TEXT,
     FOREIGN KEY (campaign_id)
         REFERENCES campaigns(campaign_id)
         ON DELETE RESTRICT

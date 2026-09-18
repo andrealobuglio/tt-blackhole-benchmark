@@ -30,6 +30,10 @@ class RunWorkspace:
     prompts_path: Path
     stdout_path: Path
     stderr_path: Path
+    orchestration_error_path: Path
+    run_phase: str = "measurement"
+    if run_phase not in {"warmup", "measurement"}:
+        raise ValueError("run_phase must be 'warmup' or 'measurement'")
 
 
 def _relative_path(
@@ -75,6 +79,7 @@ def create_run_workspace(
     repetition_index: int,
     configuration: Mapping[str, Any],
     prompts: Sequence[Mapping[str, Any]],
+    run_phase: str = "measurement",
     run_id: str | None = None,
 ) -> RunWorkspace:
     """Create the artifact directory and database row for one run."""
@@ -85,8 +90,11 @@ def create_run_workspace(
     if repetition_index < 0:
         raise ValueError("repetition_index must be non-negative")
 
+    if run_phase not in {"warmup", "measurement"}:
+        raise ValueError("run_phase must be 'warmup' or 'measurement'")
     identifier = run_id or str(uuid4())
     run_root = campaign.runs_directory / identifier
+    orchestration_error_path = run_root / "orchestrator_error.log"
 
     configuration_path = run_root / "configuration.json"
     prompts_path = run_root / "prompts.json"
@@ -102,27 +110,28 @@ def create_run_workspace(
         with connect_database(campaign.database_path) as connection:
             connection.execute(
                 """
-                INSERT INTO runs (
-                    run_id,
-                    campaign_id,
-                    repetition_index,
-                    model,
-                    input_tokens_requested,
-                    output_tokens_requested,
-                    batch_size,
-                    request_count,
-                    status,
-                    stdout_path,
-                    stderr_path,
-                    prompt_path,
-                    configuration_path
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO runs (run_id,
+                                  campaign_id,
+                                  repetition_index,
+                                  run_phase,
+                                  model,
+                                  input_tokens_requested,
+                                  output_tokens_requested,
+                                  batch_size,
+                                  request_count,
+                                  status,
+                                  stdout_path,
+                                  stderr_path,
+                                  prompt_path,
+                                  configuration_path,
+                                  orchestration_error_path)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     identifier,
                     campaign.campaign_id,
                     repetition_index,
+                    run_phase,
                     model,
                     workload.input_tokens,
                     workload.output_tokens,
@@ -132,7 +141,14 @@ def create_run_workspace(
                     _relative_path(stdout_path, campaign.root),
                     _relative_path(stderr_path, campaign.root),
                     _relative_path(prompts_path, campaign.root),
-                    _relative_path(configuration_path, campaign.root),
+                    _relative_path(
+                        configuration_path,
+                        campaign.root,
+                    ),
+                    _relative_path(
+                        orchestration_error_path,
+                        campaign.root,
+                    ),
                 ),
             )
             connection.commit()
@@ -147,6 +163,7 @@ def create_run_workspace(
         prompts_path=prompts_path,
         stdout_path=stdout_path,
         stderr_path=stderr_path,
+        orchestration_error_path=orchestration_error_path,
     )
 
 
@@ -207,3 +224,58 @@ def record_process_execution(
         raise
     except Exception as error:
         raise RunRepositoryError(f"Unable to record execution for run {run.run_id}") from error
+
+
+def record_orchestration_failure(
+    *,
+    campaign: CampaignWorkspace,
+    run: RunWorkspace,
+    status: str,
+    diagnostic: str,
+) -> None:
+    """Persist a raw orchestration failure diagnostic."""
+
+    allowed_statuses = {
+        "executor_failed",
+        "telemetry_failed",
+    }
+
+    if status not in allowed_statuses:
+        raise ValueError(f"Unsupported orchestration failure status: {status}")
+
+    if not diagnostic:
+        raise ValueError("diagnostic must not be empty")
+
+    if run.campaign_id != campaign.campaign_id:
+        raise ValueError("Run does not belong to the supplied campaign")
+
+    try:
+        _write_text_atomic(
+            run.orchestration_error_path,
+            diagnostic,
+        )
+
+        with connect_database(campaign.database_path) as connection:
+            cursor = connection.execute(
+                """
+                UPDATE runs
+                SET status = ?
+                WHERE run_id = ? AND campaign_id = ?
+                """,
+                (
+                    status,
+                    run.run_id,
+                    campaign.campaign_id,
+                ),
+            )
+
+            if cursor.rowcount != 1:
+                raise RunRepositoryError(f"Run not found in database: {run.run_id}")
+
+            connection.commit()
+    except RunRepositoryError:
+        raise
+    except Exception as error:
+        raise RunRepositoryError(
+            f"Unable to record orchestration failure for run {run.run_id}"
+        ) from error

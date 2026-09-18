@@ -94,7 +94,8 @@ def test_run_database_contains_raw_request_and_relative_paths(
                 stdout_path,
                 stderr_path,
                 prompt_path,
-                configuration_path
+                configuration_path,
+                orchestration_error_path
             FROM runs
             WHERE run_id = ?
             """,
@@ -113,6 +114,7 @@ def test_run_database_contains_raw_request_and_relative_paths(
         f"runs/{run.run_id}/stderr.log",
         f"runs/{run.run_id}/prompts.json",
         f"runs/{run.run_id}/configuration.json",
+        f"runs/{run.run_id}/orchestrator_error.log",
     )
 
 
@@ -252,3 +254,23 @@ def test_existing_run_directory_is_not_overwritten(
         create_run_workspace(**arguments)
 
     assert marker.read_text(encoding="utf-8") == "preserve"
+
+
+def test_create_run_rejects_invalid_phase(
+    tmp_path: Path,
+) -> None:
+    campaign = make_campaign(tmp_path)
+
+    with pytest.raises(
+        ValueError,
+        match="run_phase",
+    ):
+        create_run_workspace(
+            campaign=campaign,
+            model="test-model",
+            workload=make_workload(),
+            repetition_index=0,
+            run_phase="unknown",
+            configuration={},
+            prompts=[],
+        )
