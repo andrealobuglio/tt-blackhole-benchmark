@@ -131,3 +131,32 @@ def test_preserves_virtualenv_python_symlink(
     )
 
     assert invocation.command[0] == str(python_link)
+
+
+@pytest.mark.parametrize("batch_size", [1, 8, 32])
+def test_invocation_selects_only_performance_case(
+    tmp_path: Path,
+    batch_size: int,
+) -> None:
+    workload = Workload(
+        input_tokens=128,
+        output_tokens=32,
+        batch_size=batch_size,
+        request_count=batch_size,
+    )
+
+    invocation = build_tt_metal_invocation(
+        tt_metal_root=tmp_path / "tt-metal",
+        prompt_file=tmp_path / "prompts.json",
+        model="test-model",
+        workload=workload,
+        max_sequence_length=1024,
+        cache_path=tmp_path / "cache",
+        trace_enabled=True,
+        python_executable="/usr/bin/python3",
+    )
+
+    selector_index = invocation.command.index("-k")
+
+    assert invocation.command[selector_index + 1] == "performance and batch-1"
+    assert f"--batch_size={batch_size}" in invocation.command
