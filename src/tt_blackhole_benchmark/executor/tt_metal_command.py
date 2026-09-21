@@ -55,8 +55,13 @@ def build_tt_metal_invocation(
         "-s",
         "-v",
         "models/tt_transformers/demo/simple_text_demo.py",
+        # Select only the performance parameter set. A plain
+        # "batch-1" expression also selects accuracy-batch-1,
+        # causing two complete inference executions per run.
         "-k",
-        "batch-1",
+        "performance and batch-1",
+        "-k",
+        "performance and batch-1",
         f"--input_prompts={prompts}",
         "--instruct=1",
         f"--repeat_batches={repeat_batches}",
