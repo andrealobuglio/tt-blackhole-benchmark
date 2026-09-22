@@ -1,0 +1,34 @@
+name: qwen-primary-in128-out128
+seed: 42
+warmup_runs: 1
+repetitions: 3
+
+runtime:
+  model: Qwen/Qwen2.5-0.5B-Instruct
+  max_sequence_length: 1024
+  dispatch_mode: fast
+  trace_enabled: true
+  cache_path: /workspace/alobuglio/tt-metal-jit-cache-fast-test
+
+telemetry:
+  enabled: true
+  backend: tt-smi-persistent
+  interval_ms: 100
+  idle_before_seconds: 2.0
+  idle_after_seconds: 2.0
+
+workloads:
+  - input_tokens: 128
+    output_tokens: 128
+    batch_size: 1
+    request_count: 1
+
+  - input_tokens: 128
+    output_tokens: 128
+    batch_size: 8
+    request_count: 8
+
+  - input_tokens: 128
+    output_tokens: 128
+    batch_size: 32
+    request_count: 32

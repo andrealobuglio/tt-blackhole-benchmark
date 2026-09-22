@@ -218,3 +218,13 @@ __marimo__/
 .streamlit/secrets.toml
 
 /results/
+
+# Local validation helper
+/validate.sh
+
+# Accidental local database
+/benchmark.sqlite
+
+# Generated notebook artifacts
+/analysis/exports/
+/analysis/figures/
